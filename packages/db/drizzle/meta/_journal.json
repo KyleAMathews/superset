@@ -379,6 +379,13 @@
       "when": 1778777338910,
       "tag": "0053_invitations_team_id_and_session_active_team_id",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1778863064152,
+      "tag": "0054_drop_linear_global_unique_index",
+      "breakpoints": true
     }
   ]
 }

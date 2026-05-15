@@ -1,0 +1,1 @@
+DROP INDEX "integration_connections_provider_external_org_active_unique";
