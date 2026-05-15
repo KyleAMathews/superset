@@ -159,16 +159,23 @@ export class TunnelManager {
 		console.log(`[relay] tunnel unregistered: ${hostId}`);
 	}
 
-	// SIGTERM-driven graceful drain. Closes every open tunnel with WS code
-	// 1001 ("Going Away") so the host-service can recognize this as a deploy
-	// drain (not a hard disconnect) and reconnect immediately, instead of
-	// entering exponential backoff against TCP-RST'd sockets. Used by the
-	// SIGTERM handler in index.ts.
+	// Application-defined WS close code (4xxx range) signaling "relay is
+	// draining for a deploy — reconnect immediately." Distinct from 1001
+	// ("Going Away") which the ping-timeout / dispose paths use; the host
+	// resets its backoff only on this code, so a mass ping-timeout doesn't
+	// trigger a thundering-herd of fast reconnects.
+	static readonly WS_CLOSE_DRAIN = 4001;
+
+	// SIGTERM-driven graceful drain. Closes every open tunnel with the
+	// app-defined "drain" close code so the host-service can recognize this
+	// as a deploy drain (not a hard disconnect or ping timeout) and
+	// reconnect immediately. Called from the SIGINT/SIGTERM handler in
+	// index.ts.
 	async drain(reason = "Server draining for deploy"): Promise<void> {
 		console.log(`[relay] draining ${this.tunnels.size} tunnels`);
 		for (const tunnel of this.tunnels.values()) {
 			try {
-				tunnel.ws.close(1001, reason);
+				tunnel.ws.close(TunnelManager.WS_CLOSE_DRAIN, reason);
 			} catch {
 				// already closed
 			}

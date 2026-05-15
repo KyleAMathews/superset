@@ -133,10 +133,13 @@ export class TunnelClient {
 							`[host-service:tunnel] relay rejected connection (code=${event.code}, reason=${event.reason ?? ""}); retrying`,
 						);
 					}
-					// Clean close from the relay (1001 = "Going Away", typically a
-					// deploy drain). Reset backoff so we don't sit in 30s retry
-					// mode while the relay is restarting in <2s.
-					if (event.code === 1001) {
+					// App-defined "relay draining for deploy" close code
+					// (4001). Distinct from 1001 ("Going Away") which the
+					// ping-timeout / dispose paths use — only reset on 4001 so
+					// a mass ping-timeout doesn't trigger a thundering-herd of
+					// instant reconnects. After reset, next attempt fires at
+					// the base delay instead of the 5s ceiling.
+					if (event.code === 4001) {
 						this.reconnectAttempts = 0;
 						console.log(
 							"[host-service:tunnel] relay draining; reconnecting immediately",

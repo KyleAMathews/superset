@@ -51,14 +51,20 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 // SIGTERM) to the main process during rolling deploys; listen on both to
 // also cover hand-rolled `fly machine stop` and local Ctrl-C. Without this,
 // deploys kill the process while tunnels are open and host-services see
-// TCP-RST'd sockets, triggering their long exponential backoff. Drain
-// closes each WS with code 1001 ("Going Away") so hosts reconnect promptly.
+// TCP-RST'd sockets, triggering their long exponential backoff.
+//
+// Sequence: stop accepting new TCP connections (server.close), then close
+// every open tunnel with the app-defined drain code so hosts reconnect
+// promptly. server is assigned at the bottom of this file — by signal
+// time, the closure has it.
+let server: ReturnType<typeof serve> | null = null;
 let draining = false;
 const handleDrain = async (signal: string) => {
 	if (draining) return;
 	draining = true;
 	console.log(`[relay] ${signal} received, draining tunnels`);
 	try {
+		server?.close();
 		await tunnelManager.drain();
 	} catch (err) {
 		console.error("[relay] drain failed", err);
@@ -358,7 +364,7 @@ try {
 	console.error("[relay] startup cleanup failed", err);
 }
 
-const server = serve({ fetch: app.fetch, port: env.RELAY_PORT }, (info) => {
+server = serve({ fetch: app.fetch, port: env.RELAY_PORT }, (info) => {
 	console.log(
 		`[relay] listening on http://localhost:${info.port} (region=${env.FLY_REGION} machine=${env.FLY_MACHINE_ID})`,
 	);
