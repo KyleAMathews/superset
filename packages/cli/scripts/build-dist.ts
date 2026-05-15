@@ -56,6 +56,11 @@ const NATIVE_PACKAGES = [
 	"onnxruntime-node",
 	"@anush008/tokenizers",
 	"@mastra/duckdb",
+	// @mastra/duckdb declares @mastra/core as a peerDependency, which
+	// `copyPackageWithDeps` doesn't walk. Without copying it explicitly the
+	// runtime fails with ERR_MODULE_NOT_FOUND on the very first
+	// host-service.js import of @mastra/duckdb.
+	"@mastra/core",
 	"@duckdb/node-api",
 	"@duckdb/node-bindings",
 ] as const;
