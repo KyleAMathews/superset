@@ -65,7 +65,9 @@ jobs:
         # cli-latest pointer that the install.sh default targets — that
         # would silently upgrade every existing user onto an unstable build.
         # Opt-in users install via SUPERSET_VERSION=cli-vX.Y.Z-alpha.N.
-        if: ${{ !contains(github.ref_name, '-') }}
+        # Match cli-vX.Y.Z (stable) but not cli-vX.Y.Z-alpha.N etc.
+        # The version body must not contain a hyphen → semver pre-release.
+        if: ${{ !contains(github.ref_name, '-alpha') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-rc') }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION_TAG: ${{ github.ref_name }}
