@@ -60,6 +60,12 @@ jobs:
           echo "${VERSION_TAG#cli-v}" > release-artifacts/version.txt
 
       - name: Update rolling cli-latest release
+        # Pre-release tags (cli-v0.2.18-alpha.1, -beta.1, -rc.1) build and
+        # publish their own versioned release but must NOT advance the
+        # cli-latest pointer that the install.sh default targets — that
+        # would silently upgrade every existing user onto an unstable build.
+        # Opt-in users install via SUPERSET_VERSION=cli-vX.Y.Z-alpha.N.
+        if: ${{ !contains(github.ref_name, '-') }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION_TAG: ${{ github.ref_name }}
